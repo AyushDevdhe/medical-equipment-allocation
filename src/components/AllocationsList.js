@@ -9,7 +9,6 @@ const AllocationsList = ({
 }) => {
   const [activeTab, setActiveTab] = useState("current");
 
-  // Format algorithm allocations for display
   const formatAlgorithmAllocations = (algorithmResults, algorithmType) => {
     if (!algorithmResults || !algorithmResults.allocations) return [];
 
