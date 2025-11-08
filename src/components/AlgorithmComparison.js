@@ -24,7 +24,6 @@ const AlgorithmComparison = ({
   const [greedySteps, setGreedySteps] = useState([]);
   const [knapsackSteps, setKnapsackSteps] = useState([]);
 
-  // Safe pending requests detection
   const pendingRequests = useMemo(() => {
     try {
       if (!Array.isArray(requests)) {
@@ -55,7 +54,6 @@ const AlgorithmComparison = ({
     }
   }, [requests]);
 
-  // Safe equipment map
   const equipmentMap = useMemo(() => {
     try {
       if (!Array.isArray(equipment)) {
@@ -86,7 +84,6 @@ const AlgorithmComparison = ({
     }
   }, [equipment]);
 
-  // Safe greedy algorithm with step tracking
   const runGreedyAlgorithm = useCallback(() => {
     try {
       const steps = [];
@@ -96,7 +93,7 @@ const AlgorithmComparison = ({
 
       if (!Array.isArray(pendingRequests) || pendingRequests.length === 0) {
         steps.push("No pending requests found");
-        setGreedySteps(steps); // Set steps immediately
+        setGreedySteps(steps); 
         return {
           allocations: [],
           totalCost: 0,
@@ -106,7 +103,6 @@ const AlgorithmComparison = ({
         };
       }
 
-      // Priority weights for sorting
       const priorityWeights = {
         critical: 4,
         Critical: 4,
@@ -122,7 +118,6 @@ const AlgorithmComparison = ({
         LOW: 1,
       };
 
-      // Sort by priority (highest first)
       const sortedRequests = [...pendingRequests].sort((a, b) => {
         const weightA = priorityWeights[a.priority] || 1;
         const weightB = priorityWeights[b.priority] || 1;
@@ -191,7 +186,6 @@ const AlgorithmComparison = ({
         `Completed: ${allocations.length} allocations made, Total Cost: $${totalCost}`
       );
 
-      // Set steps in state
       setGreedySteps(steps);
 
       const result = {
@@ -209,7 +203,6 @@ const AlgorithmComparison = ({
     }
   }, [pendingRequests, equipmentMap]);
 
-  // Safe knapsack algorithm with step tracking
   const runKnapsackAlgorithm = useCallback(
     (budget) => {
       try {
@@ -221,7 +214,7 @@ const AlgorithmComparison = ({
 
         if (!Array.isArray(pendingRequests) || pendingRequests.length === 0) {
           steps.push("No pending requests found");
-          setKnapsackSteps(steps); // Set steps immediately
+          setKnapsackSteps(steps); 
           return {
             allocations: [],
             totalCost: 0,
@@ -231,7 +224,6 @@ const AlgorithmComparison = ({
           };
         }
 
-        // Filter valid requests with available equipment
         const validRequests = pendingRequests.filter((req) => {
           if (!req || !req.equipmentId) return false;
           const eq = equipmentMap[req.equipmentId];
@@ -247,7 +239,7 @@ const AlgorithmComparison = ({
 
         if (validRequests.length === 0) {
           steps.push("No valid requests with available equipment");
-          setKnapsackSteps(steps); // Set steps immediately
+          setKnapsackSteps(steps); 
           return {
             allocations: [],
             totalCost: 0,
@@ -257,7 +249,6 @@ const AlgorithmComparison = ({
           };
         }
 
-        // Priority weights for value calculation
         const priorityWeights = {
           critical: 1000,
           Critical: 1000,
@@ -286,7 +277,6 @@ const AlgorithmComparison = ({
           );
         });
 
-        // Prepare items for knapsack
         const items = validRequests.map((req, index) => {
           const eq = equipmentMap[req.equipmentId];
           const cost = (eq.costPerDay || 0) * (req.quantity || 1);
@@ -309,7 +299,6 @@ const AlgorithmComparison = ({
         );
         steps.push("Step 5: Fill DP table using dynamic programming...");
 
-        // Dynamic programming knapsack
         const n = items.length;
         const dp = Array(n + 1)
           .fill()
@@ -339,7 +328,6 @@ const AlgorithmComparison = ({
           `Step 6: DP computation complete - Max value achieved: ${dp[n][budget]}`
         );
 
-        // Backtrack to find selected items
         const allocations = [];
         let remainingBudget = budget;
         let w = budget;
@@ -377,7 +365,6 @@ const AlgorithmComparison = ({
           }, Budget Remaining: $${remainingBudget}`
         );
 
-        // Set steps in state
         setKnapsackSteps(steps);
 
         const result = {
@@ -407,7 +394,6 @@ const AlgorithmComparison = ({
     setIsLoading(true);
     setShowResults(false);
 
-    // Reset steps and results
     setGreedySteps([]);
     setKnapsackSteps([]);
     setGreedyResults(null);
