@@ -8,7 +8,6 @@ const AlgorithmVisualization = ({
 }) => {
   const [activeTab, setActiveTab] = useState("greedy");
 
-  // Get the correct steps based on active tab
   const getCurrentSteps = () => {
     if (activeTab === "greedy") {
       return greedyResults?.steps || algorithmSteps || [];
@@ -20,7 +19,6 @@ const AlgorithmVisualization = ({
 
   const currentSteps = getCurrentSteps();
 
-  // Debug information
   console.log("🔍 AlgorithmVisualization Debug:", {
     activeTab,
     hasGreedyResults: !!greedyResults,
