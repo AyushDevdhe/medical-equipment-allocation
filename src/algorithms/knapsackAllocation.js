@@ -4,8 +4,7 @@
 
 export const knapsackAllocation = (requests, equipment, budget) => {
   const steps = [];
-
-  // Step 1: Filter pending requests
+  
   const pendingRequests = requests.filter((r) => r.status === "Pending");
 
   steps.push({
@@ -15,15 +14,13 @@ export const knapsackAllocation = (requests, equipment, budget) => {
     complexity: "O(1) - Initialization",
   });
 
-  // Step 2: Calculate value for each request (inverse of priority = higher value)
-  // Priority 1 (Critical) = Value 4, Priority 2 = Value 3, etc.
   const items = pendingRequests
     .map((req) => {
       const eq = equipment.find(
         (e) => e.id === req.equipmentId || e.type === req.equipmentType
       );
       const cost = eq ? eq.costPerDay * req.quantity : 0;
-      const value = (5 - req.priority) * 10; // Priority 1 = 40, Priority 2 = 30, etc.
+      const value = (5 - req.priority) * 10; 
 
       return {
         request: req,
@@ -60,7 +57,6 @@ export const knapsackAllocation = (requests, equipment, budget) => {
     };
   }
 
-  // Step 3: Build DP table
   const dp = Array(n + 1)
     .fill(null)
     .map(() => Array(budget + 1).fill(0));
@@ -72,7 +68,6 @@ export const knapsackAllocation = (requests, equipment, budget) => {
     complexity: "O(n × W) - DP table construction",
   });
 
-  // Fill DP table
   for (let i = 1; i <= n; i++) {
     for (let w = 0; w <= budget; w++) {
       const cost = items[i - 1].cost;
@@ -93,7 +88,6 @@ export const knapsackAllocation = (requests, equipment, budget) => {
     complexity: "O(n × W) - Filling table",
   });
 
-  // Step 4: Backtrack to find selected items
   const selected = [];
   let w = budget;
   for (let i = n; i > 0; i--) {
@@ -110,7 +104,6 @@ export const knapsackAllocation = (requests, equipment, budget) => {
     complexity: "O(n) - Backtracking",
   });
 
-  // Step 5: Allocate selected items
   const allocations = [];
   const updatedEquipment = [...equipment];
   const updatedRequests = [...requests];
