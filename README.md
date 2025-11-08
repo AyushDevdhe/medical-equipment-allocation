@@ -1,7 +1,3 @@
-Sure — here’s your **refined README.md** in one clean, copy-paste-ready block (no nested code blocks):
-
----
-
 # 🏥 Medical Equipment Allocation System
 
 A **React-based web application** designed to help healthcare facilities efficiently allocate limited medical equipment using intelligent algorithms.
@@ -168,6 +164,11 @@ timestamp: Date
 3. **Run Allocation** – Execute selected algorithm
 4. **Analyze Results** – View graphical outcomes
 5. **Implement Plan** – Apply the chosen allocation
+
+   NOTE:
+   The Greedy Allocation approach is considered optimal in scenarios such as mass casualty events or when time efficiency is the primary concern.
+
+   The Knapsack Allocation approach is preferred when budget constraints or resource optimization are critical factors in decision-making.
 
 ---
 
