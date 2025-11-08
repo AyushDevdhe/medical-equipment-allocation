@@ -5,14 +5,11 @@
 export const greedyAllocation = (requests, equipment) => {
   const steps = [];
 
-  // Step 1: Filter pending requests and sort by priority (Greedy approach)
   const pendingRequests = requests
     .filter((r) => r.status === "Pending")
     .sort((a, b) => {
-      // Priority: 1 = Critical, 2 = High, 3 = Medium, 4 = Low
-      // We want Critical (1) first, then High (2), then Medium (3), then Low (4)
       if (a.priority !== b.priority) return a.priority - b.priority;
-      return a.timestamp - b.timestamp; // FIFO for same priority
+      return a.timestamp - b.timestamp;
     });
 
   steps.push({
@@ -22,7 +19,6 @@ export const greedyAllocation = (requests, equipment) => {
     complexity: "O(n log n) - Sorting operation",
   });
 
-  // Debug: Log the sorted order
   console.log("📊 Sorted requests by priority:");
   pendingRequests.forEach((req, index) => {
     console.log(
@@ -36,9 +32,7 @@ export const greedyAllocation = (requests, equipment) => {
   const updatedEquipment = [...equipment];
   const updatedRequests = [...requests];
 
-  // Step 2: Process each request in priority order
   pendingRequests.forEach((request, index) => {
-    // Find equipment by ID if specified, otherwise by type
     const eq = request.equipmentId
       ? updatedEquipment.find((e) => e.id === request.equipmentId)
       : updatedEquipment.find((e) => e.type === request.equipmentType);
@@ -54,9 +48,7 @@ export const greedyAllocation = (requests, equipment) => {
       complexity: "O(1) - Constant time check",
     });
 
-    // Check if equipment is available
     if (eq && eq.available >= request.quantity) {
-      // Allocate equipment
       eq.available -= request.quantity;
 
       const allocation = {
@@ -115,7 +107,6 @@ export const greedyAllocation = (requests, equipment) => {
   };
 };
 
-// Helper function to convert priority number to label
 function getPriorityLabel(priority) {
   const priorityMap = {
     1: "Critical",
