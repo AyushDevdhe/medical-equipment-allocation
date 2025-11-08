@@ -39,7 +39,6 @@ const EquipmentList = ({ equipment, onAdd, onUpdate, onDelete }) => {
             className="border-2 border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all hover:border-blue-300"
           >
             {editingId === eq.id ? (
-              // Edit Mode
               <div className="space-y-3">
                 <input
                   type="text"
@@ -99,7 +98,6 @@ const EquipmentList = ({ equipment, onAdd, onUpdate, onDelete }) => {
                 </div>
               </div>
             ) : (
-              // View Mode
               <>
                 <div className="flex justify-between items-start mb-3">
                   <div>
