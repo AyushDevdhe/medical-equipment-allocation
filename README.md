@@ -197,8 +197,5 @@ timestamp: Date
 This project is licensed under the **MIT License**.
 You may freely use, modify, and distribute it with proper attribution.
 
----
+--
 
-**Disclaimer:**
-This project is developed for **educational purposes**.
-For use in real healthcare environments, proper validation, data protection, and compliance with healthcare regulations are essential.
