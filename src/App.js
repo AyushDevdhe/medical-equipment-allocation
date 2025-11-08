@@ -53,16 +53,13 @@ function App() {
     setActiveTab("allocations");
   };
 
-  // FIXED: For comparison - use copies to avoid modifying actual state
   const handleRunGreedyComparison = () => {
-    // Create deep copies to avoid modifying actual state
     const requestsCopy = JSON.parse(JSON.stringify(requests));
     const equipmentCopy = JSON.parse(JSON.stringify(equipment));
     return greedyAllocation(requestsCopy, equipmentCopy);
   };
 
   const handleRunKnapsackComparison = (budget) => {
-    // Create deep copies to avoid modifying actual state
     const requestsCopy = JSON.parse(JSON.stringify(requests));
     const equipmentCopy = JSON.parse(JSON.stringify(equipment));
     return knapsackAllocation(requestsCopy, equipmentCopy, budget);
@@ -74,7 +71,6 @@ function App() {
     setActiveTab("allocations");
   };
 
-  // Equipment CRUD operations
   const handleAddEquipment = (newEquipment) => {
     setEquipment([...equipment, newEquipment]);
   };
@@ -89,7 +85,6 @@ function App() {
     setEquipment(equipment.filter((eq) => eq.id !== id));
   };
 
-  // Request CRUD operations
   const handleAddRequest = (newRequest) => {
     setRequests([...requests, newRequest]);
   };
