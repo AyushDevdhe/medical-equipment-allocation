@@ -71,13 +71,13 @@ MEDICAL-EQUIPMENT-ALLOCATION/
 
 ## 🧮 Algorithms
 
-### 🟢 Greedy Allocation (greedyAllocation.js)
+### 🔵Greedy Allocation (greedyAllocation.js)
 
 * Allocates based on priority and urgency
 * Fast and efficient for real-time scenarios
 * Supports configurable weights for flexibility
 
-### 🔵 Knapsack Allocation (knapsackAllocation.js)
+### 🟢Knapsack Allocation (knapsackAllocation.js)
 
 * Applies the **0/1 Knapsack optimization**
 * Maximizes total utility within constraints
