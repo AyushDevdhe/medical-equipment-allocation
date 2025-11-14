@@ -24,6 +24,7 @@ const AlgorithmComparison = ({
   const [greedySteps, setGreedySteps] = useState([]);
   const [knapsackSteps, setKnapsackSteps] = useState([]);
 
+  // Safe pending requests detection
   const pendingRequests = useMemo(() => {
     try {
       if (!Array.isArray(requests)) {
@@ -54,6 +55,7 @@ const AlgorithmComparison = ({
     }
   }, [requests]);
 
+  // Safe equipment map
   const equipmentMap = useMemo(() => {
     try {
       if (!Array.isArray(equipment)) {
@@ -84,25 +86,67 @@ const AlgorithmComparison = ({
     }
   }, [equipment]);
 
+  // Helper function to convert string steps to object format
+  const convertStringStepsToObjects = (stringSteps) => {
+    return stringSteps.map((step, index) => {
+      // Determine complexity based on step content
+      let complexity = "Info";
+      if (
+        step.includes("✅") ||
+        step.includes("SUCCESS") ||
+        step.includes("SELECTED")
+      ) {
+        complexity = "Success";
+      } else if (
+        step.includes("❌") ||
+        step.includes("FAILED") ||
+        step.includes("ERROR")
+      ) {
+        complexity = "Failed";
+      } else if (step.includes("O(") || step.includes("Complexity")) {
+        complexity = "Complexity";
+      } else if (step.includes("Step")) {
+        complexity = "Step";
+      }
+
+      return {
+        step: index + 1,
+        description:
+          step.replace(/^Step\s+\d+(\.\d+)?:\s*/, "").split(" - ")[0] || step,
+        data: step.includes(" - ")
+          ? step.split(" - ").slice(1).join(" - ")
+          : "",
+        complexity: complexity,
+      };
+    });
+  };
+
+  // Safe greedy algorithm with step tracking - FIXED
   const runGreedyAlgorithm = useCallback(() => {
     try {
       const steps = [];
+      steps.push("🚀 Starting Greedy Algorithm");
       steps.push(
         "Step 1: Sort requests by priority (Critical > High > Medium > Low)"
       );
 
       if (!Array.isArray(pendingRequests) || pendingRequests.length === 0) {
-        steps.push("No pending requests found");
-        setGreedySteps(steps); 
-        return {
+        steps.push("❌ No pending requests found");
+        const result = {
           allocations: [],
           totalCost: 0,
           equipmentUsed: {},
           requestsProcessed: 0,
           efficiency: 0,
+          steps: convertStringStepsToObjects(steps),
         };
+        setGreedySteps(convertStringStepsToObjects(steps));
+        return result;
       }
 
+      steps.push(`📋 Found ${pendingRequests.length} pending requests`);
+
+      // Priority weights for sorting
       const priorityWeights = {
         critical: 4,
         Critical: 4,
@@ -118,6 +162,7 @@ const AlgorithmComparison = ({
         LOW: 1,
       };
 
+      // Sort by priority (highest first)
       const sortedRequests = [...pendingRequests].sort((a, b) => {
         const weightA = priorityWeights[a.priority] || 1;
         const weightB = priorityWeights[b.priority] || 1;
@@ -125,28 +170,52 @@ const AlgorithmComparison = ({
       });
 
       steps.push(
-        `Step 2: Found ${sortedRequests.length} pending requests, sorted by priority`
+        `Step 2: Sorted ${sortedRequests.length} requests by priority`
       );
+      sortedRequests.forEach((req, index) => {
+        steps.push(
+          `   ${index + 1}. ${req.patient} - ${
+            req.equipmentType || req.equipmentId
+          } [${req.priority}]`
+        );
+      });
 
       const allocations = [];
       let totalCost = 0;
       const equipmentUsed = {};
       const currentAvailability = { ...equipmentMap };
 
-      let stepCounter = 3;
+      steps.push("Step 3: Start allocation process");
+
+      let stepCounter = 4;
+      let allocatedCount = 0;
+
       for (const request of sortedRequests) {
         try {
           if (!request || !request.equipmentId) {
+            steps.push(`Step ${stepCounter}: ❌ Invalid request - skipping`);
+            stepCounter++;
             continue;
           }
 
           const eq = currentAvailability[request.equipmentId];
           if (!eq) {
+            steps.push(
+              `Step ${stepCounter}: ❌ Equipment ${request.equipmentId} not found - skipping`
+            );
+            stepCounter++;
             continue;
           }
 
           const available = eq.available || 0;
           const requestedQty = request.quantity || 1;
+
+          steps.push(
+            `Step ${stepCounter}: Processing ${request.equipmentId} for ${request.patient}`
+          );
+          steps.push(
+            `   Available: ${available}, Requested: ${requestedQty}, Priority: ${request.priority}`
+          );
 
           if (available >= requestedQty) {
             const allocationCost = (eq.costPerDay || 0) * requestedQty;
@@ -158,10 +227,12 @@ const AlgorithmComparison = ({
               patient: request.patient || "Unknown",
               doctor: request.doctor || "Unknown",
               priority: request.priority || "low",
+              equipmentName: request.equipmentName || request.equipmentType,
             };
 
             allocations.push(allocation);
             totalCost += allocationCost;
+            allocatedCount++;
 
             currentAvailability[request.equipmentId].available =
               available - requestedQty;
@@ -169,24 +240,36 @@ const AlgorithmComparison = ({
               (equipmentUsed[request.equipmentId] || 0) + requestedQty;
 
             steps.push(
-              `Step ${stepCounter}: ✓ Allocated ${request.equipmentId} to ${request.patient} [${request.priority}] - Cost: $${allocationCost}`
+              `Step ${stepCounter}.5: ✅ SUCCESS - Allocated ${requestedQty} ${request.equipmentId} to ${request.patient}`
+            );
+            steps.push(
+              `   Cost: $${allocationCost}, Remaining: ${
+                available - requestedQty
+              }/${eq.total || eq.totalQuantity}`
             );
           } else {
             steps.push(
-              `Step ${stepCounter}: ✗ Insufficient ${request.equipmentId} for ${request.patient} [${request.priority}]`
+              `Step ${stepCounter}.5: ❌ FAILED - Insufficient ${request.equipmentId} for ${request.patient}`
             );
+            steps.push(`   Needed: ${requestedQty}, Available: ${available}`);
           }
           stepCounter++;
         } catch (reqError) {
           console.error("Error processing request:", request, reqError);
+          steps.push(
+            `Step ${stepCounter}: 💥 ERROR processing request - ${reqError.message}`
+          );
+          stepCounter++;
         }
       }
 
+      steps.push(`Step ${stepCounter}: Algorithm Complete`);
       steps.push(
-        `Completed: ${allocations.length} allocations made, Total Cost: $${totalCost}`
+        `📊 Results: ${allocatedCount} allocations made, Total Cost: $${totalCost}`
       );
+      steps.push(`⏱️ Time Complexity: O(n log n) - Dominated by sorting`);
 
-      setGreedySteps(steps);
+      const objectSteps = convertStringStepsToObjects(steps);
 
       const result = {
         allocations,
@@ -194,36 +277,53 @@ const AlgorithmComparison = ({
         equipmentUsed,
         requestsProcessed: sortedRequests.length,
         efficiency: allocations.length / Math.max(pendingRequests.length, 1),
+        steps: objectSteps,
       };
+
+      // Set steps in state
+      setGreedySteps(objectSteps);
+      console.log("Greedy steps set:", objectSteps.length);
 
       return result;
     } catch (error) {
       console.error("❌ Greedy Algorithm Failed:", error);
+      const errorSteps = convertStringStepsToObjects([
+        "❌ Greedy Algorithm Failed:",
+        error.message,
+      ]);
+      setGreedySteps(errorSteps);
       throw new Error(`Greedy algorithm error: ${error.message}`);
     }
   }, [pendingRequests, equipmentMap]);
 
+  // Safe knapsack algorithm with step tracking - FIXED
   const runKnapsackAlgorithm = useCallback(
     (budget) => {
       try {
         const steps = [];
+        steps.push("🚀 Starting Knapsack Algorithm");
         steps.push("Step 1: Initialize 0/1 Knapsack Dynamic Programming");
         steps.push(
-          `Budget: $${budget} | Objective: Maximize value within budget constraint`
+          `💰 Budget: $${budget} | Objective: Maximize value within budget constraint`
         );
 
         if (!Array.isArray(pendingRequests) || pendingRequests.length === 0) {
-          steps.push("No pending requests found");
-          setKnapsackSteps(steps); 
-          return {
+          steps.push("❌ No pending requests found");
+          const result = {
             allocations: [],
             totalCost: 0,
             budgetRemaining: budget,
             equipmentUsed: {},
             requestsProcessed: 0,
+            steps: convertStringStepsToObjects(steps),
           };
+          setKnapsackSteps(convertStringStepsToObjects(steps));
+          return result;
         }
 
+        steps.push(`📋 Found ${pendingRequests.length} pending requests`);
+
+        // Filter valid requests with available equipment
         const validRequests = pendingRequests.filter((req) => {
           if (!req || !req.equipmentId) return false;
           const eq = equipmentMap[req.equipmentId];
@@ -238,17 +338,20 @@ const AlgorithmComparison = ({
         );
 
         if (validRequests.length === 0) {
-          steps.push("No valid requests with available equipment");
-          setKnapsackSteps(steps); 
-          return {
+          steps.push("❌ No valid requests with available equipment");
+          const result = {
             allocations: [],
             totalCost: 0,
             budgetRemaining: budget,
             equipmentUsed: {},
             requestsProcessed: 0,
+            steps: convertStringStepsToObjects(steps),
           };
+          setKnapsackSteps(convertStringStepsToObjects(steps));
+          return result;
         }
 
+        // Priority weights for value calculation
         const priorityWeights = {
           critical: 1000,
           Critical: 1000,
@@ -273,10 +376,13 @@ const AlgorithmComparison = ({
           const priority = req.priority || "low";
           const value = priorityWeights[priority] || 400;
           steps.push(
-            `   - ${req.equipmentId} for ${req.patient}: Cost=$${cost}, Value=${value} [${priority}]`
+            `   ${index + 1}. ${req.equipmentId} for ${
+              req.patient
+            }: Cost=$${cost}, Value=${value} [${priority}]`
           );
         });
 
+        // Prepare items for knapsack
         const items = validRequests.map((req, index) => {
           const eq = equipmentMap[req.equipmentId];
           const cost = (eq.costPerDay || 0) * (req.quantity || 1);
@@ -291,6 +397,7 @@ const AlgorithmComparison = ({
             patient: req.patient || "Unknown",
             doctor: req.doctor || "Unknown",
             priority: req.priority || "low",
+            equipmentName: req.equipmentName || req.equipmentType,
           };
         });
 
@@ -299,6 +406,7 @@ const AlgorithmComparison = ({
         );
         steps.push("Step 5: Fill DP table using dynamic programming...");
 
+        // Dynamic programming knapsack
         const n = items.length;
         const dp = Array(n + 1)
           .fill()
@@ -328,6 +436,7 @@ const AlgorithmComparison = ({
           `Step 6: DP computation complete - Max value achieved: ${dp[n][budget]}`
         );
 
+        // Backtrack to find selected items
         const allocations = [];
         let remainingBudget = budget;
         let w = budget;
@@ -335,6 +444,8 @@ const AlgorithmComparison = ({
         steps.push("Step 7: Backtrack to find optimal allocations:");
 
         let allocationStep = 8;
+        let selectedCount = 0;
+
         for (let i = n; i > 0; i--) {
           if (keep[i][w]) {
             const item = items[i - 1];
@@ -346,26 +457,34 @@ const AlgorithmComparison = ({
               patient: item.req.patient || "Unknown",
               doctor: item.req.doctor || "Unknown",
               priority: item.req.priority || "low",
+              equipmentName: item.equipmentName,
             };
             allocations.push(allocation);
             w -= item.cost;
             remainingBudget -= item.cost;
+            selectedCount++;
 
             steps.push(
-              `Step ${allocationStep}: ✓ Selected ${item.req.equipmentId} for ${item.req.patient} [${item.req.priority}] - Cost: $${item.cost}, Remaining: $${remainingBudget}`
+              `Step ${allocationStep}: ✅ SELECTED - ${item.req.equipmentId} for ${item.req.patient}`
+            );
+            steps.push(
+              `   Priority: ${item.req.priority}, Cost: $${item.cost}, Remaining Budget: $${remainingBudget}`
             );
             allocationStep++;
           }
         }
 
-        steps.push(`Step ${allocationStep}: Algorithm completed`);
+        steps.push(`Step ${allocationStep}: Algorithm Completed`);
         steps.push(
-          `Results: ${allocations.length} allocations, Total Cost: $${
+          `📊 Results: ${selectedCount} allocations, Total Cost: $${
             budget - remainingBudget
           }, Budget Remaining: $${remainingBudget}`
         );
+        steps.push(
+          `⏱️ Time Complexity: O(n × W) = O(${items.length} × ${budget})`
+        );
 
-        setKnapsackSteps(steps);
+        const objectSteps = convertStringStepsToObjects(steps);
 
         const result = {
           allocations,
@@ -377,11 +496,21 @@ const AlgorithmComparison = ({
             return acc;
           }, {}),
           requestsProcessed: validRequests.length,
+          steps: objectSteps,
         };
+
+        // Set steps in state
+        setKnapsackSteps(objectSteps);
+        console.log("Knapsack steps set:", objectSteps.length);
 
         return result;
       } catch (error) {
         console.error("❌ Knapsack Algorithm Failed:", error);
+        const errorSteps = convertStringStepsToObjects([
+          "❌ Knapsack Algorithm Failed:",
+          error.message,
+        ]);
+        setKnapsackSteps(errorSteps);
         throw new Error(`Knapsack algorithm error: ${error.message}`);
       }
     },
@@ -394,6 +523,7 @@ const AlgorithmComparison = ({
     setIsLoading(true);
     setShowResults(false);
 
+    // Reset steps and results
     setGreedySteps([]);
     setKnapsackSteps([]);
     setGreedyResults(null);
@@ -429,8 +559,8 @@ const AlgorithmComparison = ({
       }
 
       console.log("✅ Algorithm comparison completed successfully");
-      console.log("Greedy steps count:", greedySteps.length);
-      console.log("Knapsack steps count:", knapsackSteps.length);
+      console.log("Greedy steps:", greedySteps.length);
+      console.log("Knapsack steps:", knapsackSteps.length);
     } catch (err) {
       console.error("💥 Algorithm comparison failed:", err);
       setError(err.message);
@@ -483,6 +613,10 @@ const AlgorithmComparison = ({
             <div>
               Budget: <strong>${budget}</strong>
             </div>
+          </div>
+          <div className="mt-2 text-xs text-gray-600">
+            Greedy Steps: {greedySteps.length} | Knapsack Steps:{" "}
+            {knapsackSteps.length}
           </div>
         </div>
 
@@ -623,9 +757,32 @@ const AlgorithmComparison = ({
                         greedySteps.map((step, index) => (
                           <div
                             key={index}
-                            className="text-xs text-gray-700 mb-1 font-mono leading-relaxed"
+                            className={`p-3 rounded-lg border-l-4 mb-2 ${
+                              step.complexity === "Success"
+                                ? "bg-green-50 border-green-500"
+                                : step.complexity === "Failed"
+                                ? "bg-red-50 border-red-500"
+                                : step.complexity === "Complexity"
+                                ? "bg-purple-50 border-purple-500"
+                                : "bg-blue-50 border-blue-500"
+                            }`}
                           >
-                            {step}
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="font-bold text-gray-800">
+                                Step {step.step}
+                              </span>
+                              <span className="text-xs text-gray-600">
+                                {step.complexity}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">
+                              {step.description}
+                            </p>
+                            {step.data && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                {step.data}
+                              </p>
+                            )}
                           </div>
                         ))
                       ) : (
@@ -687,9 +844,32 @@ const AlgorithmComparison = ({
                         knapsackSteps.map((step, index) => (
                           <div
                             key={index}
-                            className="text-xs text-gray-700 mb-1 font-mono leading-relaxed"
+                            className={`p-3 rounded-lg border-l-4 mb-2 ${
+                              step.complexity === "Success"
+                                ? "bg-green-50 border-green-500"
+                                : step.complexity === "Failed"
+                                ? "bg-red-50 border-red-500"
+                                : step.complexity === "Complexity"
+                                ? "bg-purple-50 border-purple-500"
+                                : "bg-green-50 border-green-500"
+                            }`}
                           >
-                            {step}
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="font-bold text-gray-800">
+                                Step {step.step}
+                              </span>
+                              <span className="text-xs text-gray-600">
+                                {step.complexity}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">
+                              {step.description}
+                            </p>
+                            {step.data && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                {step.data}
+                              </p>
+                            )}
                           </div>
                         ))
                       ) : (
